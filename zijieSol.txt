@@ -1,0 +1,180 @@
+解法二：单调栈解法
+
+基本思想：
+1. 以数组中每一个值为最小值，假设这个最小值为num[k], 分别找到以该值num[k]为最小值，数组最左边的小于该值的下标i，和数组最右边的小于该值的下标j, 则区间num[i+1,j-1]为以num[k]为最小值所能达到的最大区间，则此区间能达到的最大值为num[k]*Sum(i+1,j-1),其中Sum函数为数组中区间[i+1,j+1]的所有数的和
+2. 按照步骤1(可利用单调栈实现)结算数组中每一个值，维护一个最大值maxSum, 当遍历数组的最后一个数，所得maxSum即为所求。
+
+举例说明步骤1单调栈的实现：
+
+如现在有一个数组vector<int> num=[6,2,5,5,5,4,7]， 接着我们创建一个栈stack<int> s，我们将数组的数压栈入栈的规则如下:
+
+如果s为空，或者当前遍历元素num[i]的值大于等于栈顶元素，那么我们直接将num[i]的下标i压入栈中。
+如果s不为空，且当前遍历元素num[i]的值小于等于栈顶元素，那么我们就依次从栈中弹出元素，直到num[i]的值大于栈顶元素。并在弹出的过程中结算弹出中每一个数所构成的区间的区间中最小数*区间所有数和的最大值。
+如果数组中的元素已经全部遍历压栈，如果此时栈不为空，我们就重复步骤2，将栈中的元素全部结算。
+如现在我们开始遍历数组[6,2,5,5,5,4,7]，
+
+遍历到6时，因为此时栈为空，我们直接将6的下标0压入栈中。此时栈中元素为{0}
+遍历到2时，此时栈不为空，且num[i]=2<6(栈顶元素)，根据规则2，则将6的下标0出栈保存到top，并结算以6为最小值的最大区间的最大值。即我们知道6最左边小于6的元素的下标是不存在，那么我们默认这个下标为0；最右边小于6的元素为2，也就是当前遍历到的元素，其下标1，则此时CurSum=num[i]*Sum(0,1-1)=6*6=36，并更新maxSum为36。结算完栈顶元素后，我们将2的下标1压栈。此时栈中元素为{1}
+遍历到5时，此时num[i]=5>=2(栈顶元素),根据规则1，将遍历到的5的下标2压栈，此时栈中元素为{1，2}。
+继续遍历到第二个5时，此时num[i]=5>=5(栈顶元素),根据规则1，将遍历到的第二个5的下标3压栈，此时栈中元素为{1，2，3}。
+继续遍历到第三个5时，此时num[i]=5>=5(栈顶元素),根据规则1，将遍历到的第三个5的下标4压栈，此时栈中元素为{1，2，3，4}。
+遍历到4时，此时栈不为空，且num[i]=4<5(栈顶元素)，根据规则2，我们将5的下标4出栈保存到top，并结算以5为最小值的最大区间的最大值。此时我们会发现以这个5为最小值的最大区间的最大值并没有被正确的结算，但是这并不影响结果，因为我们在结算的过程不断更新maxSum,那么位于栈最底部的5就会被正确结算, 那么那时maxSum就会被更新为正确的值。我们跳过栈最底部之前5的结算，直接来说栈最底部5的结算情况；经过栈最底部之前5的结算，此时栈的元素为{1，2}，位于该5最左边的小于5的元素的下标为1，最右边小于5元素的下标为5，那么此时CurSum=num[i]*Sum(1+1,5-1)=5*15=75，并更新maxSum为75。结算完栈顶元素后，我们将4的下标5压栈。此时栈中元素为{1，5}。
+遍历到7时，此时num[i]=7>=4(栈顶元素),根据规则1，将遍历到的7的下标6压栈，此时栈中元素为{1，5，6}。
+此时全部数组元素已经全部压栈，那么根据规则3，我们将继续结算栈中的全部元素，直到栈为空。得出最后maxSum=104.
+单调栈代码如下：
+
+int incr_stack(vector<int> &num) {
+    stack<int> s;
+    int sum = 0;
+    int maxSum = INT_MIN;
+    int n = num.size();
+    for (int i = 0; i<n; i++) {
+        if (s.empty() || num[i] >=num[s.top()]) {//规则1
+            s.push(i);
+        }
+        else {
+            while (!s.empty() && num[s.top()] >=num[i]) {//规则2
+                int top = s.top();
+                s.pop();
+                int tmp=s.empty()? vecSum(num, 0, i-1) : vecSum(num, s.top()+ 1, i - 1);
+                int curSum = num[top]*tmp;
+                maxSum = max(curSum, maxSum);
+            }
+            s.push(i);
+        }
+    }
+    while (!s.empty()) {//规则3
+        int top = s.top();
+        s.pop();
+        int tmp=s.empty()? vecSum(num, 0, n-1): vecSum(num, s.top()+ 1, n - 1);
+        int curSum =  num[top]*tmp;
+        maxSum = max(curSum, maxSum);
+    }
+    return maxSum;
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+测试代码：
+#include <iostream>
+#include <vector>
+#include <stack>
+#include <time.h>
+#include <algorithm>
+using namespace std;
+int vecSum(vector<int> &num, int i, int j)//计算num[i]到num[j]的和 
+{
+    int sum=0;
+    for (int k = i; k <= j; k++) {
+        sum += num[k];
+    }
+    return sum;
+}
+int incr_stack(vector<int> &num) {//单调栈实现 
+    stack<int> s;
+    int sum = 0;
+    int maxSum = INT_MIN;
+    int n = num.size();
+    for (int i = 0; i<n; i++) {
+        if (s.empty() || num[i] >=num[s.top()]) {//规则1
+            s.push(i);
+        }
+        else {
+            while (!s.empty() && num[s.top()] >=num[i]) {//规则2
+                int top = s.top();
+                s.pop();
+                int tmp=s.empty()? vecSum(num, 0, i-1) : vecSum(num, s.top()+ 1, i - 1);
+                int curSum = num[top]*tmp;
+                maxSum = max(curSum, maxSum);
+            }
+            s.push(i);
+        }
+    }
+    while (!s.empty()) {//规则3
+        int top = s.top();
+        s.pop();
+        int tmp=s.empty()? vecSum(num, 0, n-1): vecSum(num, s.top()+ 1, n - 1);
+        int curSum =  num[top]*tmp;
+        maxSum = max(curSum, maxSum);
+    }
+    return maxSum;
+}
+int enum_method(vector<int> &num) {//穷举方法，用于测试 
+    int n = num.size();
+    int maxSum = INT_MIN;
+    vector<int> tmp;
+    for (int i = 0; i<n; ++i) {
+        for (int j = i; j<n; ++j) {
+            tmp.clear();
+            for (int k = i; k <= j; ++k) {
+                tmp.push_back(num[k]);
+            }
+            sort(tmp.begin(), tmp.end());
+            int curSum = tmp[0] * vecSum(tmp, 0, tmp.size() - 1);
+            maxSum = max(curSum, maxSum);
+        }
+    }
+    return maxSum;
+}
+vector<int> getRandomArray(int len) {//随机产生数组 
+    vector<int> res;
+    if (len<0)
+        return res;
+    res.reserve(len);
+    srand((unsigned)time(NULL));  
+    for (int i = 0; i<len; i++) {
+        res.push_back(rand() % 100);
+    }
+    return res;
+}
+void printArray(vector<int> arr) {//用于测试 
+
+    for (int i = 0; i<arr.size(); i++) {
+        cout << arr[i] << " ";
+    }
+    cout << endl;
+}
+int main()
+{
+    bool flag=true;
+    for(int i=1;i<200;i++){
+        vector<int> num = getRandomArray(i);
+        //printArray(num);
+        int res1=enum_method(num);
+        int res2=incr_stack(num);
+        if(res1!=res2){
+            flag=false;
+            break;
+        }    
+    }
+    if(flag)
+        cout<<"true"<<endl;
+    else
+        cout<<"false"<<endl;
+}
